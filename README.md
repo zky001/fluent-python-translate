@@ -5,3 +5,7 @@
 
 1.http://www.crifan.com/files/doc/docbook/python_topic_re/release/
 python正则模块re的2个最重要的函数search和findall的基本介绍
+
+
+2.http://zhangxiaoyang.me/index.html
+敏捷开发的一些概念：人月，人件等等等等
