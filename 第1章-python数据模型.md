@@ -25,7 +25,7 @@ Python最好的一个品质是它的一致性。使用Python工作一阵子后�
 ##一个pythonic的纸牌游戏
 下面是一个非常简单的例子，但它只是说明实施`__getitem__`和`__len__`两种方法的力量。
 例1-1 是一个类来表示一副扑克牌：
-`
+```
 import collections
 
 Card = collections.namedtuple('Card', ['rank', 'suit'])
@@ -43,4 +43,4 @@ class FrenchDeck:
 
     def __getitem__(self, position):
         return self._cards[position]
-`
+```
