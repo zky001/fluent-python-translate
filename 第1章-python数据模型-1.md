@@ -51,3 +51,26 @@ class FrenchDeck:
 >>> beer_card
 Card(rank='7', suit='diamonds')
 ```
+但这个例子的关键点是frenchdeck类。它很短，但它包括了一个重点。首先，像任何标准的Python集合，一副牌对len()函数返回卡的数量。
+```
+>>> deck = FrenchDeck() 
+>>> len(deck)
+52
+```
+从一副牌中读取特定的卡片，好比第一个或最后一个，应该是和deck[0]或deck[-1]一样容易，这就是`__getitem__`方法提供的访问。
+```
+>>> deck[0]
+Card(rank='2', suit='spades') 
+>>> deck[-1]
+Card(rank='A', suit='hearts')
+```
+我们应该创建一个方法来选择一个随机卡吗？不需要！Python已经有一个函数可以从一个序列得到一个随机的元素：random.choice。我们可以使用它在一副牌中获得一张卡：
+```
+>>> from random import choice 
+>>> choice(deck)
+Card(rank='3', suit='hearts') 
+>>> choice(deck) 
+Card(rank='K', suit='spades') 
+>>> choice(deck) 
+Card(rank='2', suit='clubs')
+```
