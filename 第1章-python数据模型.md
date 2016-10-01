@@ -19,8 +19,9 @@ Python最好的一个品质是它的一致性。使用Python工作一阵子后�
 * 对象的创建和销毁; 
 * 字符串表示和格式; 
 * 管理上下文等 (i.e. with 块); 
+
 ###魔术和dunder 
-魔术方法的术语是特殊用法的俚语，但当谈论关于具体方法如`__getitem__`，一些Python开发人员‐走捷径说“under-under-getitem”这是模棱两可，由于语法__x还有另一个特殊的意义。但准确发音“under-under-getitem-under- under ”是无聊的，所以我效仿作者，Steve Holden老师说“dunder-getitem ”。所有有经验的python支持者明白捷径。作为一个结果，特殊的方法也被称为dunder方法。
+魔术方法的术语是特殊用法的俚语，但当谈论关于具体方法如`__getitem__`，一些Python开发人员‐走捷径说“under-under-getitem”这是模棱两可，由于语法`__x`还有另一个特殊的意义。但准确发音“under-under-getitem-under-under”是无聊的，所以我效仿作者，Steve Holden老师说“dunder-getitem ”。所有有经验的python支持者明白捷径。作为一个结果，特殊的方法也被称为dunder方法。
 
 ##一个pythonic的纸牌游戏
 下面是一个非常简单的例子，但它只是说明实施`__getitem__`和`__len__`两种方法的力量。
