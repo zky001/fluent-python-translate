@@ -72,4 +72,4 @@ Card(rank='A', suit='spades')
 通过实现特殊的方法`__len__`和`__getitem__`。我们frenchdeck表现得像一个标准的Python序列，允许它从核心语言功能获益，好比迭代和切片，同时从标准库获益，就像例子中所使用的dom.choice, reversed和sorted。
 多亏了composition，`__len__` 和 `__getitem__` 的方法可以把所有工作交给一个列表对象，`self._cards`
 ###tips 如何洗牌
-到现在，一个FrenchDeck卡牌对象都不能被洗牌，因为它是不可改变的，除非违反封装和直接处理_cards属性。在11章中，这些bug将被一个一行的添加下划线的`__setitem__`方法修正。
+到现在，一个FrenchDeck卡牌对象都不能被洗牌，因为它是不可改变的，除非违反封装和直接处理`_cards`属性。在11章中，这些bug将被一个一行的添加下划线的`__setitem__`方法修正。
