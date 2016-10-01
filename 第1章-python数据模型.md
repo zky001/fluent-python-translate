@@ -1,4 +1,4 @@
-#1.          <center>python数据模型对象</center> 
+#1.          python数据模型对象 
 Guido的语言设计的审美是惊人的。我见过很多好的语言设计者可以建立理论上美丽的语言，但是没有人会使用，但Guido是一个罕见的可以建立一个，只是在理论上略低于完美但可在写程序感到快乐的编程语言的人。
 <p align="right">— Jim Hugunin Jython创造者, AspectJ合伙创建人, .Net DLR架构师</p>
 Python最好的一个品质是它的一致性。使用Python工作一阵子后，您可以开始对新的特性做出正确的猜测。
@@ -44,4 +44,10 @@ class FrenchDeck:
 
     def __getitem__(self, position):
         return self._cards[position]
+```
+首先要注意的是使用`collections.namedtuple`构建一个简单的类来表示个人卡。因为Python 2.6中namedtuple可以用来构建类，这些类是只是捆绑了属性而没有自定义方法的对象类，如数据库的记录。在这个例子中，我们使用它提供了具有一个很好的代表性的卡，如显示在控制台会话那样：
+```
+>>> beer_card = Card('7', 'diamonds') 
+>>> beer_card
+Card(rank='7', suit='diamonds')
 ```
