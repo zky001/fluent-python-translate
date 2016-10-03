@@ -1,4 +1,2 @@
-
-<div align=center>
-<img src="http://ww4.sinaimg.cn/large/006y8lVagw1f8e3kqylgfj30q80k0abc.jpg" width="600" height="400" alt="图1 2D向量相加的例子"/>
-</div>
+##字符串表示形式
+`__repr__`特殊方法被内置，为得到对象的字符串表示形式时调用。如果我们没有实现`__repr__`，向量实例在控制台显示就会如 `<Vector object at 0x10e100070>`形式
