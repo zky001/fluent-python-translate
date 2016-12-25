@@ -1,0 +1,531 @@
+Python 3 实现 markdown 文本解析器
+一、课程描述
+
+本次课程我们将使用 Python 3 打造 Markdown 文本解析器，并且程序支持输出 HTML 格式与 PDF 格式的文件。
+
+1.1 课程知识点
+
+通过本次课程的学习，我们将接触到以下知识点：
+
+正则表达式
+docopt 构建命令行解析器
+简单的 HTML 语法
+1.2 试验流程
+
+实验的流程为：
+
+附加依赖安装
+编程实现
+运行程序
+1.3 实验截图
+
+转换效果如下：
+
+此处输入图片的描述
+
+此处输入图片的描述
+
+此处输入图片的描述
+
+二、附加依赖安装
+
+在安装附加依赖软件包之前，先更新已安装的软件包，避免在安装的过程中出现问题。
+
+$ sudo apt-get update
+2.1 安装 wkhtmltopdf
+
+wkhtmltopdf 是一款能将 HTML 文件转化为 PDF 文件的工具，支持 UNIX 平台与Windows 平台。
+
+$ sudo apt-get install wkhtmltopdf
+更多参考：
+
+wkhtmltopdf 官方网站
+2.2 安装 docopt
+
+docopt 是 Python 的一个第三方参数解析库，可以根据使用者提供的文档描述自动生成解析器。因此使用者可以用它来定义参数与解析参数。
+
+$ sudo pip3 install docopt
+更多参考：
+
+docopt 官网
+三、编程实现
+
+先来考虑一下该程序需要实现哪些功能。
+
+能够解析命令行参数，根据参数进行相应的处理，比如将目标文件转换为 HTML 文件或者转换为 PDF 文件。
+解析目标文件，输出 HTML 文件。
+根据需要将 HTML 文件转化为 PDF 文件。
+对于第一点我们可以使用 docopt 库来构建命令行解析器，而第三点 HTML 转换可以使用 wkhtmltopdf 工具来进行转换。
+
+至于第二点，Markdown 文本解析实际上就是文件翻译工作，即将 Markdown 中规定的特殊字符根据语法规则转换成相应的 HTML 标签，从而实现解析工作。
+
+进入 Code 文件夹创建 shiyanlou_cs708 文件夹作为项目目录，之后该项目的所有文件都位于该文件夹中。
+
+3.1 构建命令行解析器
+
+进入文件夹shiyanlou_cs708, 创建 md2pdf.py 文件，可以使用 gedit 或 vim 进行编辑编写文档，或者使用 web IDE 。
+
+在下方的代码中，在程序段首我们编写了一段程序帮助文档，该文档默认由 __doc__ 变量引用，通过将该变量作为参数传递给 docopt 方法可以快速构建起命令行解析器。然后我们还导入了所有需要用到的模块。
+
+"""md2pdf
+
+translates markdown file into html or pdf, and support picture insertion.
+
+Usage: 
+    md2pdf <sourcefile> <outputfile> [options]
+
+Options:
+    -h --help     show help document.
+    -v --version  show version information.
+    -o --output   translate sourcefile into html file.
+    -p --print    translate sourcefile into pdf file and html file respectively.
+    -P --Print    translate sourcefile into pdf file only.
+"""
+
+import os,re
+import sys,getopt
+from enum import Enum
+from subprocess import call
+from functools import reduce
+
+from docopt import docopt
+
+__version__ = '1.0'
+
+# 主函数
+def main():
+    # 定义输出的 HTML 文件默认文件名
+    dest_file = "translation_result.html"
+    # 定义输出的 PDF 文件的默认文件名
+    dest_pdf_file = "translation_result.pdf"
+    # 该选项决定了是否保留作为转化的 HTML 临时文件
+    only_pdf = False
+
+    # 使用帮助文档构建命令行解析器
+    args = docopt(__doc__, version=__version__)
+
+    dest_file = args['<outputfile>'] if args['--output'] else dest_file
+
+    dest_pdf_file = args['<outputfile>'] if args['--print'] or args['--Print'] else ""
+    # 进行解析
+    run(args['<sourcefile>'], dest_file, dest_pdf_file, args['--Print'])
+
+
+if __name__=="__main__":
+    main()
+3.1.1 docopt 使用介绍
+
+这里为了方便大家理解 docopt 的使用，我们先偏离一下主题单独讲解 docopt 模块。首先为了获得最直观的感受，我们不妨在以上代码中添加一句 print(args) 来打印解析器参数解析结果。
+
+此处输入图片的描述
+
+测试结果如上图，我们发现 docopt 库返回了一个字典，字典中的键由我们给出的 Usage 与 Options 中的选项构成。
+
+所以 docopt(__doc__, version=__version__) 函数能自动根据三个双引号中的文档内容（存储于 __doc__ 中）生成命令行解析器，并将解析结果以字典对象返回。因此使用 docopt 进行命令行解析，我们唯一需要做好的事情就是编写好帮助文档，然后其它一切解析的问题都可以甩手给 docopt 自动解决。
+
+补充：关于帮助文档的编写格式以及关于 docopt 的更多信息请自行前往 docopt 官网查阅文档
+3.2 Markdown 语法规则
+
+在正式编写解析程序之前，我们需要先规定相应的语法规则，这里我没有完全遵照标准的 Markdown 语法规则来设定。
+
+标题支持
+
+# ---------h1
+##---------h2
+###--------h3
+####-------h4
+#####------h5
+######-----h6
+分割线
+
+--------（至少三个 - ）
+列表
+
+# 有序
+1. 
+2. 
+
+# 无序
+-
++
+链接
+
+\[text](url) # 超链接
+![image](url) # 图像
+公式
+
+$行内公式$
+
+$$行间公式$$
+3.3 run 程序编写
+
+run 函数负责解析 Markdown 文本，是项目程序的精华所在。
+
+...
+# 定义三个枚举类
+# 定义表状态
+class TABLE(Enum):
+    Init = 1
+    Format = 2
+    Table = 3
+
+# 有序序列状态
+class ORDERLIST(Enum):
+    Init = 1
+    List = 2
+
+# 块状态
+class BLOCK(Enum):
+    Init = 1
+    Block = 2
+    CodeBlock = 3
+
+# 定义全局状态，并初始化状态
+table_state = TABLE.Init
+orderList_state = ORDERLIST.Init
+block_state = BLOCK.Init
+is_code = False
+is_normal = True
+
+temp_table_first_line = []
+temp_table_first_line_str = ""
+
+need_mathjax = False
+
+...
+
+def run(source_file, dest_file, dest_pdf_file, only_pdf):
+    # 获取文件名
+    file_name = source_file
+    # 转换后的 HTML 文件名
+    dest_name = dest_file
+    # 转换后的 PDF 文件名
+    dest_pdf_name = dest_pdf_file
+
+    # 获取文件后缀
+    _, suffix = os.path.splitext(file_name)
+    if suffix not in [".md",".markdown",".mdown","mkd"]:
+        print('Error: the file should be in markdown format')
+        sys.exit(1)
+
+    if only_pdf:
+        dest_name = ".~temp~.html"
+
+
+    f = open(file_name, "r")
+    f_r = open(dest_name, "w")
+
+    # 往文件中填写 HTML 的一些属性
+    f_r.write("""<style type="text/css">div {display: block;font-family: "Times New Roman",Georgia,Serif}\
+            #wrapper { width: 100%;height:100%; margin: 0; padding: 0;}#left { float:left; \
+            width: 10%;  height: 100%;  }#second {   float:left;   width: 80%;height: 100%;   \
+            }#right {float:left;  width: 10%;  height: 100%; \
+            }</style><div id="wrapper"> <div id="left"></div><div id="second">""")
+    f_r.write("""<meta charset="utf-8"/>""")
+
+    # 逐行解析 markdwon 文件
+    for eachline in f:
+        result = parse(eachline)
+        if result != "":
+            f_r.write(result)
+
+    f_r.write("""</br></br></div><div id="right"></div></div>""")
+
+    # 公式支持
+    global need_mathjax
+    if need_mathjax:
+        f_r.write("""<script type="text/x-mathjax-config">\
+        MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});\
+        </script><script type="text/javascript" \
+        src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>""")
+    # 文件操作完成之后记得关闭！！！
+    f_r.close()
+    f.close()
+
+    # 调用扩展 wkhtmltopdf 将 HTML 文件转换成 PDF
+    if dest_pdf_name != "" or only_pdf:
+        call(["wkhtmltopdf", dest_name, dest_pdf_name])
+    # 如果有必要，删除中间过程生成的 HTML 文件
+    if only_pdf:
+        call(["rm", dest_name])
+...
+3.4 编写 parse()
+
+...
+def parse(input):
+    global block_state, is_normal
+    is_normal = True
+    result = input
+
+    # 检测当前 input 解析状态
+    result = test_state(input)
+
+    if block_state == BLOCK.Block:
+        return result
+
+    # 分析标题标记 # 
+    title_rank = 0
+    for i in range(6, 0, -1):
+        if input[:i] == '#'*i:
+            title_rank = i
+            break
+    if title_rank != 0:
+        # 处理标题，转化为相应的 HTML 文本
+        result = handleTitle(input, title_rank)
+        return result
+
+    # 分析分割线标记 --
+    if len(input) > 2 and all_same(input[:-1], '-') and input[-1] == '\n':
+        result = "<hr>"
+        return result
+
+    # 解析无序列表
+    unorderd = ['+', '-']
+    if result != "" and result[0] in unorderd :
+        result = handleUnorderd(result)
+        is_normal = False
+
+    f = input[0]
+    count = 0
+    sys_q = False
+    while f == '>':
+        count += 1
+        f = input[count]
+        sys_q = True
+    if sys_q:
+        result = "<blockquote style=\"color:#8fbc8f\"> "*count + "<b>" + input[count:] + "</b>" + "</blockquote>"*count
+        is_normal = False
+
+    # 处理特殊标记，比如 ***, ~~~
+    result = tokenHandler(result)
+    # END
+
+    # 解析图像链接
+    result = link_image(result)
+    pa = re.compile(r'^(\s)*$')
+    a = pa.match(input)
+    if input[-1] == "\n" and is_normal == True and not a :
+        result+="</br>"
+
+    return result 
+...
+3.5 编写 test_state()
+
+...
+def test_state(input):
+    global table_state, orderList_state, block_state, is_code, temp_table_first_line, temp_table_first_line_str
+    Code_List = ["python\n", "c++\n", "c\n"]
+
+    result = input
+
+    # 构建正则表达式规则
+    # 匹配块标识
+    pattern = re.compile(r'```(\s)*\n')
+    a = pattern.match(input)
+
+    # 普通块
+    if  a and block_state == BLOCK.Init:
+        result = "<blockquote>"
+        block_state = BLOCK.Block
+        is_normal = False
+    # 特殊代码块
+    elif len(input) > 4 and input[0:3] == '```' and (input[3:9] == "python" or input[3:6] == "c++" or input[3:4]== "c") and block_state == BLOCK.Init:
+        block_state = BLOCK.Block
+        result = "<code></br>"
+        is_code = True
+        is_normal = False
+    # 块结束
+    elif block_state == BLOCK.Block and input == '```\n':
+        if is_code:
+            result = "</code>"
+        else:
+            result = "</blockquote>"
+        block_state = BLOCK.Init
+        is_code = False
+        is_normal = False
+    elif block_state == BLOCK.Block:
+        pattern = re.compile(r'[\n\r\v\f\ ]')
+        result = pattern.sub("&nbsp", result)
+        pattern = re.compile(r'\t')
+        result = pattern.sub("&nbsp" * 4, result)
+        result = "<span>" + result + "</span></br>"
+        is_normal = False
+
+    # 解析有序序列
+    if len(input) > 2 and input[0].isdigit() and input[1] == '.' and orderList_state == ORDERLIST.Init:
+        orderList_state = ORDERLIST.List
+        result = "<ol><li>" + input[2:] + "</li>"
+        is_normal = False
+    elif len(input) > 2 and  input[0].isdigit() and input[1] == '.' and orderList_state == ORDERLIST.List:
+        result = "<li>" + input[2:] + "</li>"
+        is_normal = False
+    elif orderList_state == ORDERLIST.List and (len(input) <= 2 or input[0].isdigit() == False or input[1] != '.'):
+        result = "</ol>" + input
+        orderList_state = ORDERLIST.Init
+
+    # 解析表格
+    pattern = re.compile(r'^((.+)\|)+((.+))$')
+    match = pattern.match(input)
+    if match:
+        l = input.split('|')
+        l[-1] = l[-1][:-1]
+        # 将空字符弹出列表
+        if l[0] == '':
+            l.pop(0)
+        if l[-1] == '':
+            l.pop(-1)
+        if table_state == TABLE.Init:
+            table_state = TABLE.Format
+            temp_table_first_line = l
+            temp_table_first_line_str = input
+            result = ""
+        elif table_state == TABLE.Format:
+            # 如果是表头与表格主题的分割线
+            if reduce(lambda a, b: a and b, [all_same(i,'-') for i in l], True):
+                table_state = TABLE.Table
+                result = "<table><thread><tr>"
+                is_normal = False
+
+                # 添加表头
+                for i in temp_table_first_line:
+                    result += "<th>" + i + "</th>"
+                result += "</tr>"
+                result += "</thread><tbody>"
+                is_normal = False
+            else:
+                result = temp_table_first_line_str + "</br>" + input
+                table_state = TABLE.Init
+
+        elif table_state == TABLE.Table:
+            result = "<tr>"
+            for i in l:
+                result += "<td>" + i + "</td>"
+            result += "</tr>"
+
+    elif table_state == TABLE.Table:
+        table_state = TABLE.Init
+        result = "</tbody></table>" + result
+    elif table_state == TABLE.Format:
+        pass
+
+    return result
+...
+3.6 几个处理函数
+
+...
+#　判断 lst 是否全由字符 sym 构成　
+def all_same(lst, sym):
+    return not lst or sym * len(lst) == lst
+
+# 处理标题
+def handleTitle(s, n):
+    temp = "<h" + repr(n) + ">" + s[n:] + "</h" + repr(n) + ">"
+    return temp
+
+# 处理无序列表
+def handleUnorderd(s):
+    s = "<ul><li>" + s[1:]
+    s += "</li></ul>"
+    return s
+
+
+def tokenTemplate(s, match):
+    pattern = ""
+    if match == '*':
+        pattern = "\*([^\*]*)\*"
+    if match == '~~':
+        pattern = "\~\~([^\~\~]*)\~\~"
+    if match == '**':
+        pattern = "\*\*([^\*\*]*)\*\*"
+    return pattern
+
+# 处理特殊标识，比如 **, *, ~~
+def tokenHandler(s):
+    l = ['b', 'i', 'S']
+    j = 0
+    for i in ['**', '*', '~~']:
+        pattern = re.compile(tokenTemplate(s,i))
+        match = pattern.finditer(s)
+        k = 0
+        for a in match:
+            if a:
+                content = a.group(1)
+                x,y = a.span()
+                c = 3
+                if i == '*':
+                    c = 5
+                s = s[:x+c*k] + "<" + l[j] + ">" + content + "</" + l[j] + ">" + s[y+c*k:]
+                k += 1
+        pattern = re.compile(r'\$([^\$]*)\$')
+        a = pattern.search(s)
+        if a:
+            global need_mathjax
+            need_mathjax = True
+        j += 1
+    return s
+...
+3.7 编写 link_image()
+
+...
+# 处理链接
+def link_image(s):
+    # 超链接
+    pattern = re.compile(r'\\\[(.*)\]\((.*)\)')
+    match = pattern.finditer(s)
+    for a in match:
+        if a:
+            text, url = a.group(1,2)
+            x, y = a.span()
+            s = s[:x] + "<a href=" + url + " target=\"_blank\">" + text + "</a>" + s[y:]
+
+    # 图像链接
+    pattern = re.compile(r'!\[(.*)\]\((.*)\)')
+    match = pattern.finditer(s)
+    for a in match:
+        if a:
+            text, url = a.group(1,2)
+            x, y = a.span()
+            s = s[:x] + "<img src=" + url + " target=\"_blank\">" + "</a>" + s[y:]
+
+    # 角标
+    pattern = re.compile(r'(.)\^\[([^\]]*)\]')
+    match = pattern.finditer(s)
+    k = 0
+    for a in match:
+        if a:
+            sym,index = a.group(1,2)
+            x, y = a.span()
+            s = s[:x+8*k] + sym + "<sup>" + index + "</sup>" + s[y+8*k:]
+        k += 1
+
+    return s
+...
+四、运行程序
+
+这里我提供了一份模板文件用作测试使用，可以使用 wget 从以下地址下载。
+
+http://labfile.oss.aliyuncs.com/courses/708/doc_template.md
+
+# 这是本次实验的完整源码
+http://labfile.oss.aliyuncs.com/courses/708/md2pdf.py
+执行以下命令执行程序：
+
+$ python3 md2pdf.py doc_template.md -p template.pdf
+此处输入图片的描述
+
+执行完毕后，输入以下命令用firefox浏览器查看解析效果：
+
+$ firefox template.pdf
+五、总结
+
+本次课程我们使用 Python 3 打造了 Markdown 文本解析器，并且借助 wkhtmltopdf 这一工具的帮助将 HTML 文本转化成 PDF 。
+
+但是，这里我仅仅只是提供了 Markdown 解析的一种方案，还有许多更优更快的方法可以用来解析 Markdown 。
+
+另外该程序目前仅支持在 HTML 文件中显示 LaTex 公式，在从 HTML 文件转换为 PDF 的过程中使用了 wkhtmltopdf 插件，所以最终为何没能正确解析 LaTex 公式未能找出原因。
+
+六、课后习题
+
+Q1：使用 wkhtmltopdf 这个工具将在线的网页转化成 PDF 打印出来。
+
+课后习题参考链接：https://www.shiyanlou.com/questions/7392
